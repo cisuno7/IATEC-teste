@@ -22,20 +22,7 @@ if (Directory.Exists(apiSettingsPath))
         .AddEnvironmentVariables();
 }
 
-var supabaseUrl = builder.Configuration["Supabase:Url"] ?? throw new InvalidOperationException("Supabase URL not configured");
-var supabaseKey = builder.Configuration["Supabase:Key"] ?? throw new InvalidOperationException("Supabase Key not configured");
-var jwtSecret = builder.Configuration["Supabase:JwtSecret"] ?? throw new InvalidOperationException("Supabase JWT Secret not configured");
-
-builder.Services.AddSingleton(provider =>
-{
-    var options = new SupabaseOptions
-    {
-        AutoConnectRealtime = false
-    };
-    var client = new Supabase.Client(supabaseUrl, supabaseKey, options);
-    client.InitializeAsync().Wait();
-    return client;
-});
+var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
 
 builder.Services.AddCors(options =>
 {
@@ -58,7 +45,7 @@ builder.Services.AddMediatR(cfg =>
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuthService>(provider => new AuthService(jwtSecret));
 builder.Services.AddScoped<ITokenExtractor, TokenExtractor>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -70,8 +57,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = supabaseUrl,
-            ValidAudience = "authenticated",
+            ValidIssuer = "AgendaManager",
+            ValidAudience = "AgendaManagerUsers",
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
         };
     });
@@ -81,7 +68,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
     });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -141,14 +128,17 @@ if (app.Environment.IsDevelopment())
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        
         try
         {
             dbContext.Database.Migrate();
+            logger.LogInformation("Database migration completed successfully.");
         }
         catch (Exception ex)
         {
-            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             logger.LogError(ex, "An error occurred while migrating the database.");
+            throw;
         }
     }
 }

@@ -1,40 +1,41 @@
 using AgendaManager.Application.DTOs;
 using AgendaManager.Application.Interfaces;
 using AgendaManager.Application.Queries.Auth;
+using AgendaManager.Domain.Interfaces;
 
 namespace AgendaManager.Application.Handlers.Auth;
 
 public class GetCurrentUserQueryHandler : IQueryHandler<GetCurrentUserQuery, UserDto>
 {
-    private readonly IAuthService _authService;
     private readonly ITokenExtractor _tokenExtractor;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetCurrentUserQueryHandler(IAuthService authService, ITokenExtractor tokenExtractor)
+    public GetCurrentUserQueryHandler(ITokenExtractor tokenExtractor, IUnitOfWork unitOfWork)
     {
-        _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         _tokenExtractor = tokenExtractor ?? throw new ArgumentNullException(nameof(tokenExtractor));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     }
 
     public async Task<UserDto> Handle(GetCurrentUserQuery request, CancellationToken cancellationToken)
     {
-        var token = _tokenExtractor.ExtractToken();
-        if (string.IsNullOrEmpty(token))
-            throw new UnauthorizedAccessException("Token not found");
+        var userId = _tokenExtractor.ExtractUserId();
+        if (!userId.HasValue)
+            throw new UnauthorizedAccessException("Token not found or invalid");
 
-        var authUser = await _authService.GetUserAsync(token);
-        if (authUser == null)
-            throw new UnauthorizedAccessException("Invalid user");
+        var user = await _unitOfWork.Users.GetByIdAsync(userId.Value);
+        if (user == null)
+            throw new UnauthorizedAccessException("User not found");
 
-        if (!Guid.TryParse(authUser.Id, out var userId))
-            throw new UnauthorizedAccessException("Invalid user ID");
+        if (!user.IsActive)
+            throw new UnauthorizedAccessException("User is not active");
 
         return new UserDto
         {
-            Id = userId,
-            Name = authUser.Name,
-            Email = authUser.Email,
-            IsActive = true,
-            CreatedAt = authUser.CreatedAt
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email.Value,
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt
         };
     }
 }

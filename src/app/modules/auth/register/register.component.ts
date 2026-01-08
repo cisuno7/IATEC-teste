@@ -1,17 +1,34 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
+import { AuthService, RegisterRequest } from '../../../core/auth/auth.service';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-register',
   template: `
-    <div class="login-container">
-      <div class="login-card">
-        <h2 class="login-title">Agenda Manager</h2>
-        <p class="login-subtitle">Entre com suas credenciais</p>
+    <div class="register-container">
+      <div class="register-card">
+        <div class="register-header">
+          <h2 class="register-title">Criar Conta</h2>
+          <p class="register-subtitle">Preencha os dados para começar</p>
+        </div>
 
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+          <div class="form-group">
+            <label for="name" class="form-label">Nome Completo</label>
+            <input
+              type="text"
+              id="name"
+              formControlName="name"
+              class="form-input"
+              placeholder="Seu nome completo"
+              [class.error]="isFieldInvalid('name')"
+            >
+            <div class="error-message" *ngIf="isFieldInvalid('name')">
+              {{ getFieldError('name') }}
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="email" class="form-label">Email</label>
             <input
@@ -34,7 +51,7 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
               id="password"
               formControlName="password"
               class="form-input"
-              placeholder="Sua senha"
+              placeholder="Mínimo 6 caracteres"
               [class.error]="isFieldInvalid('password')"
             >
             <div class="error-message" *ngIf="isFieldInvalid('password')">
@@ -42,13 +59,28 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
             </div>
           </div>
 
+          <div class="form-group">
+            <label for="confirmPassword" class="form-label">Confirmar Senha</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              formControlName="confirmPassword"
+              class="form-input"
+              placeholder="Digite a senha novamente"
+              [class.error]="isFieldInvalid('confirmPassword')"
+            >
+            <div class="error-message" *ngIf="isFieldInvalid('confirmPassword')">
+              {{ getFieldError('confirmPassword') }}
+            </div>
+          </div>
+
           <button
             type="submit"
-            class="login-button"
-            [disabled]="loginForm.invalid || isLoading"
+            class="register-button"
+            [disabled]="registerForm.invalid || isLoading"
           >
-            <span *ngIf="isLoading">Entrando...</span>
-            <span *ngIf="!isLoading">Entrar</span>
+            <span *ngIf="isLoading">Criando conta...</span>
+            <span *ngIf="!isLoading">Criar Conta</span>
           </button>
         </form>
 
@@ -56,49 +88,29 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
           {{ errorMessage }}
         </div>
 
-        <div class="register-link">
-          <p>Não tem uma conta? <a routerLink="register" class="register-button">Criar conta</a></p>
+        <div class="login-link">
+          <p>Já tem uma conta? <a routerLink="" class="login-button-link">Fazer login</a></p>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .login-container {
+    .register-container {
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       padding: 20px;
-      position: relative;
-      overflow: hidden;
     }
 
-    .login-container::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-      animation: pulse 15s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.5; }
-      50% { transform: scale(1.1); opacity: 0.8; }
-    }
-
-    .login-card {
+    .register-card {
       background: white;
       border-radius: 16px;
       padding: 48px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
       width: 100%;
-      max-width: 420px;
-      position: relative;
-      z-index: 1;
+      max-width: 450px;
       animation: slideUp 0.4s ease-out;
     }
 
@@ -113,8 +125,13 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
       }
     }
 
-    .login-title {
+    .register-header {
       text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .register-title {
+      color: #333;
       margin-bottom: 8px;
       font-size: 32px;
       font-weight: 700;
@@ -124,14 +141,13 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
       background-clip: text;
     }
 
-    .login-subtitle {
-      text-align: center;
+    .register-subtitle {
       color: #666;
-      margin-bottom: 32px;
       font-size: 16px;
+      margin: 0;
     }
 
-    .login-form {
+    .register-form {
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -143,9 +159,9 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
     }
 
     .form-label {
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       color: #333;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 14px;
     }
 
@@ -177,7 +193,7 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
       font-weight: 500;
     }
 
-    .login-button {
+    .register-button {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
@@ -191,49 +207,49 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
       box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     }
 
-    .login-button:hover:not(:disabled) {
+    .register-button:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
 
-    .login-button:active:not(:disabled) {
+    .register-button:active:not(:disabled) {
       transform: translateY(0);
     }
 
-    .login-button:disabled {
+    .register-button:disabled {
       opacity: 0.6;
       cursor: not-allowed;
       transform: none;
     }
 
-    .register-link {
+    .login-link {
       text-align: center;
       margin-top: 24px;
       padding-top: 24px;
       border-top: 1px solid #e1e5e9;
     }
 
-    .register-link p {
+    .login-link p {
       color: #666;
       font-size: 14px;
       margin: 0;
     }
 
-    .register-button {
+    .login-button-link {
       color: #667eea;
       text-decoration: none;
       font-weight: 600;
       transition: color 0.3s ease;
     }
 
-    .register-button:hover {
+    .login-button-link:hover {
       color: #764ba2;
       text-decoration: underline;
     }
   `]
 })
-export class LoginComponent {
-  loginForm: FormGroup;
+export class RegisterComponent {
+  registerForm: FormGroup;
   isLoading = false;
   errorMessage = '';
 
@@ -242,30 +258,48 @@ export class LoginComponent {
     private authService: AuthService,
     private router: Router
   ) {
-    this.loginForm = this.createForm();
+    this.registerForm = this.createForm();
   }
 
   private createForm(): FormGroup {
     return this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
-    });
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', [Validators.required]]
+    }, { validators: this.passwordMatchValidator });
+  }
+
+  private passwordMatchValidator(form: FormGroup) {
+    const password = form.get('password');
+    const confirmPassword = form.get('confirmPassword');
+    
+    if (password && confirmPassword && password.value !== confirmPassword.value) {
+      confirmPassword.setErrors({ passwordMismatch: true });
+      return { passwordMismatch: true };
+    }
+    
+    return null;
   }
 
   onSubmit(): void {
-    if (this.loginForm.valid) {
+    if (this.registerForm.valid) {
       this.isLoading = true;
       this.errorMessage = '';
 
-      const credentials: LoginRequest = this.loginForm.value;
+      const registerData: RegisterRequest = {
+        name: this.registerForm.value.name,
+        email: this.registerForm.value.email,
+        password: this.registerForm.value.password
+      };
 
-      this.authService.login(credentials).subscribe({
+      this.authService.register(registerData).subscribe({
         next: () => {
-          this.router.navigate(['/dashboard']);
+          this.router.navigate(['/login']);
         },
         error: (error) => {
           this.isLoading = false;
-          this.errorMessage = error.error?.message || 'Erro ao fazer login. Verifique suas credenciais.';
+          this.errorMessage = error.error?.message || 'Erro ao criar conta. Tente novamente.';
         }
       });
     } else {
@@ -274,29 +308,39 @@ export class LoginComponent {
   }
 
   isFieldInvalid(fieldName: string): boolean {
-    const field = this.loginForm.get(fieldName);
+    const field = this.registerForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
   getFieldError(fieldName: string): string {
-    const field = this.loginForm.get(fieldName);
+    const field = this.registerForm.get(fieldName);
     if (field && field.errors) {
       if (field.errors['required']) {
-        return `${fieldName === 'email' ? 'Email' : 'Senha'} é obrigatório`;
+        if (fieldName === 'name') return 'Nome é obrigatório';
+        if (fieldName === 'email') return 'Email é obrigatório';
+        if (fieldName === 'password') return 'Senha é obrigatória';
+        if (fieldName === 'confirmPassword') return 'Confirmação de senha é obrigatória';
       }
       if (field.errors['email']) {
         return 'Email inválido';
       }
       if (field.errors['minlength']) {
-        return 'Senha deve ter pelo menos 6 caracteres';
+        if (fieldName === 'name') return 'Nome deve ter pelo menos 2 caracteres';
+        if (fieldName === 'password') return 'Senha deve ter pelo menos 6 caracteres';
+      }
+      if (field.errors['maxlength']) {
+        return 'Nome não pode ter mais de 100 caracteres';
+      }
+      if (field.errors['passwordMismatch']) {
+        return 'As senhas não coincidem';
       }
     }
     return '';
   }
 
   private markFormGroupTouched(): void {
-    Object.keys(this.loginForm.controls).forEach(field => {
-      const control = this.loginForm.get(field);
+    Object.keys(this.registerForm.controls).forEach(field => {
+      const control = this.registerForm.get(field);
       control?.markAsTouched();
     });
   }

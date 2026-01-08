@@ -1,68 +1,68 @@
 using AgendaManager.Application.Interfaces;
-using Supabase;
-using Supabase.Gotrue;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace AgendaManager.Infrastructure.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly Supabase.Client _supabase;
+    private readonly string _jwtSecret;
+    private readonly string _jwtIssuer;
+    private readonly string _jwtAudience;
 
-    public AuthService(Supabase.Client supabase)
+    public AuthService(string jwtSecret, string jwtIssuer = "AgendaManager", string jwtAudience = "AgendaManagerUsers")
     {
-        _supabase = supabase ?? throw new ArgumentNullException(nameof(supabase));
+        _jwtSecret = jwtSecret ?? throw new ArgumentNullException(nameof(jwtSecret));
+        _jwtIssuer = jwtIssuer;
+        _jwtAudience = jwtAudience;
     }
 
-    public async Task<AuthResult> SignInAsync(string email, string password)
+    public Task<AuthResult> SignInAsync(string email, string password)
     {
-        var session = await _supabase.Auth.SignIn(email, password);
-
-        if (session?.User == null || string.IsNullOrEmpty(session.AccessToken))
-            throw new UnauthorizedAccessException("Invalid credentials");
-
-        return new AuthResult
-        {
-            AccessToken = session.AccessToken,
-            RefreshToken = session.RefreshToken,
-            ExpiresAt = session.ExpiresAt(),
-            User = MapToAuthUser(session.User)
-        };
+        throw new InvalidOperationException("Use AuthenticateUserAsync for authentication");
     }
 
-    public async Task<AuthResult> SignUpAsync(string email, string password, string name)
+    public Task<AuthResult> SignUpAsync(string email, string password, string name)
     {
-        var signUpOptions = new SignUpOptions
-        {
-            Data = new Dictionary<string, object>
-            {
-                { "name", name }
-            }
-        };
-
-        var session = await _supabase.Auth.SignUp(email, password, signUpOptions);
-
-        if (session?.User == null || string.IsNullOrEmpty(session.AccessToken))
-            throw new InvalidOperationException("Registration failed");
-
-        return new AuthResult
-        {
-            AccessToken = session.AccessToken,
-            RefreshToken = session.RefreshToken,
-            ExpiresAt = session.ExpiresAt(),
-            User = MapToAuthUser(session.User)
-        };
+        throw new InvalidOperationException("Use CreateUserAsync for registration");
     }
 
     public async Task<AuthUser?> GetUserAsync(string jwt)
     {
         try
         {
-            var user = await _supabase.Auth.GetUser(jwt);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_jwtSecret);
 
-            if (user == null)
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = _jwtIssuer,
+                ValidAudience = _jwtAudience,
+                IssuerSigningKey = new SymmetricSecurityKey(key)
+            };
+
+            var principal = tokenHandler.ValidateToken(jwt, validationParameters, out _);
+
+            var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var email = principal.FindFirst(ClaimTypes.Email)?.Value;
+            var name = principal.FindFirst("name")?.Value;
+
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(email))
                 return null;
 
-            return MapToAuthUser(user);
+            return new AuthUser
+            {
+                Id = userId,
+                Email = email,
+                Name = name ?? string.Empty,
+                CreatedAt = DateTime.UtcNow
+            };
         }
         catch
         {
@@ -70,73 +70,43 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task SignOutAsync()
+    public Task SignOutAsync()
     {
-        await _supabase.Auth.SignOut();
+        return Task.CompletedTask;
     }
 
-    private AuthUser MapToAuthUser(User user)
+    public string HashPassword(string password)
     {
-        if (string.IsNullOrEmpty(user.Id))
-            throw new InvalidOperationException("User ID cannot be null or empty");
+        return BCrypt.Net.BCrypt.HashPassword(password);
+    }
 
-        var name = ExtractUserName(user);
+    public bool VerifyPassword(string password, string hash)
+    {
+        return BCrypt.Net.BCrypt.Verify(password, hash);
+    }
 
-        return new AuthUser
+    public string GenerateJwtToken(string userId, string email, string name)
+    {
+        var claims = new[]
         {
-            Id = user.Id,
-            Email = user.Email ?? string.Empty,
-            Name = name,
-            CreatedAt = user.CreatedAt
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim(ClaimTypes.Email, email),
+            new Claim("name", name),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
-    }
 
-    private string ExtractUserName(User user)
-    {
-        var nameFromMetadata = GetNameFromUserMetadata(user);
-        if (!string.IsNullOrWhiteSpace(nameFromMetadata))
-            return nameFromMetadata;
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecret));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var nameFromEmail = ExtractNameFromEmail(user.Email);
-        if (!string.IsNullOrWhiteSpace(nameFromEmail))
-            return nameFromEmail;
+        var token = new JwtSecurityToken(
+            issuer: _jwtIssuer,
+            audience: _jwtAudience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(24),
+            signingCredentials: credentials
+        );
 
-        return "Usuário";
-    }
-
-    private string? GetNameFromUserMetadata(User user)
-    {
-        if (user.UserMetadata == null)
-            return null;
-
-        if (!user.UserMetadata.ContainsKey("name"))
-            return null;
-
-        return TryExtractNameFromValue(user.UserMetadata["name"]);
-    }
-
-    private string? TryExtractNameFromValue(object? value)
-    {
-        if (value == null)
-            return null;
-
-        var name = value.ToString();
-        if (string.IsNullOrWhiteSpace(name))
-            return null;
-
-        return name;
-    }
-
-    private string? ExtractNameFromEmail(string? email)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-            return null;
-
-        var emailParts = email.Split('@');
-        if (emailParts.Length > 0 && !string.IsNullOrWhiteSpace(emailParts[0]))
-            return emailParts[0];
-
-        return null;
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
 

@@ -3,6 +3,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { AuthService, User } from '../../../core/auth/auth.service';
 import { EventService, Event, EventFilters } from '../../../core/services/event.service';
 import { ParticipantsComponent } from '../components/participants/participants.component';
+import { EventModalComponent } from '../components/event-modal/event-modal.component';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -28,6 +29,13 @@ import { ParticipantsComponent } from '../components/participants/participants.c
         </div>
 
         <app-filters (filtersChanged)="onFiltersChanged($event)"></app-filters>
+
+        <app-event-modal
+          [isOpen]="isModalOpen"
+          [event]="selectedEvent"
+          (closeModal)="closeModal()"
+          (eventSaved)="onEventSaved($event)">
+        </app-event-modal>
 
         <div class="events-section">
           <div class="section-header">
@@ -515,6 +523,8 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   isLoading = false;
   hasActiveFilters = false;
   currentFilters: EventFilters = {};
+  isModalOpen = false;
+  selectedEvent: Event | null = null;
 
   private destroy$ = new Subject<void>();
 
@@ -587,11 +597,23 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   }
 
   openCreateEventModal(): void {
-    console.log('Abrir modal de criação de evento');
+    this.selectedEvent = null;
+    this.isModalOpen = true;
   }
 
   editEvent(event: Event): void {
-    console.log('Editar evento:', event);
+    this.selectedEvent = event;
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false;
+    this.selectedEvent = null;
+  }
+
+  onEventSaved(event: Event): void {
+    this.loadEvents();
+    this.closeModal();
   }
 
   deleteEvent(event: Event): void {

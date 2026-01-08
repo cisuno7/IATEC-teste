@@ -27,14 +27,20 @@ public class AppDbContext : DbContext
             
             entity.OwnsOne(u => u.Email, email =>
             {
-                email.Property(e => e.Value).HasColumnName("email").IsRequired().HasMaxLength(150);
+                email.Property(e => e.Value)
+                    .HasColumnName("email")
+                    .IsRequired()
+                    .HasMaxLength(150);
+
+                email.HasIndex(e => e.Value)
+                    .IsUnique()
+                    .HasDatabaseName("idx_users_email");
             });
             
             entity.Property(u => u.PasswordHash).HasColumnName("password_hash").IsRequired();
             entity.Property(u => u.CreatedAt).HasColumnName("created_at").IsRequired().HasDefaultValueSql("now()");
             entity.Property(u => u.IsActive).HasColumnName("is_active").IsRequired().HasDefaultValue(true);
             
-            entity.HasIndex(u => u.Email.Value).HasDatabaseName("idx_users_email");
             entity.HasIndex(u => u.IsActive).HasDatabaseName("idx_users_is_active");
             
             entity.HasMany(u => u.CreatedEvents)

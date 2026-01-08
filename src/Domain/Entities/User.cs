@@ -32,6 +32,27 @@ public class User
         };
     }
 
+    public static User CreateWithId(Guid id, string name, string email, string passwordHash)
+    {
+        ValidateName(name);
+        ValidatePassword(passwordHash);
+
+        if (id == Guid.Empty)
+            throw new ArgumentException("User ID cannot be empty", nameof(id));
+
+        return new User
+        {
+            Id = id,
+            Name = name.Trim(),
+            Email = Email.Create(email),
+            PasswordHash = passwordHash,
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true,
+            CreatedEvents = new List<Event>(),
+            ParticipatedEvents = new List<Event>()
+        };
+    }
+
     public void Update(string name, string email)
     {
         ValidateName(name);

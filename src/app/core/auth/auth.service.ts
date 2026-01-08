@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, catchError, Observable, of, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 
@@ -47,8 +47,8 @@ export class AuthService {
     private router: Router
   ) { }
 
-  register(credentials: RegisterRequest): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/api/v1/auth/register`, credentials);
+  register(credentials: RegisterRequest): Observable<{ userId: string; email: string }> {
+    return this.http.post<{ userId: string; email: string }>(`${environment.apiUrl}/api/v1/auth/register`, credentials);
   }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
@@ -67,6 +67,12 @@ export class AuthService {
         this.clearAuthData();
         this.currentUserSubject.next(null);
         this.router.navigate(['/login']);
+      }),
+      catchError((error) => {
+        this.clearAuthData();
+        this.currentUserSubject.next(null);
+        this.router.navigate(['/login']);
+        return of(null);
       })
     );
   }

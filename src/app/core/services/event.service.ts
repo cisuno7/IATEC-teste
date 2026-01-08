@@ -121,4 +121,16 @@ export class EventService {
   removeParticipant(eventId: string, userId: string): Observable<void> {
     return this.http.delete<void>(`${environment.apiUrl}/api/v1/events/${eventId}/participants/${userId}`);
   }
+
+  getActiveUsers(): Observable<UserOption[]> {
+    return this.http.get<UserOption[]>(`${environment.apiUrl}/api/v1/users/active`);
+  }
+}
+
+export interface UserOption {
+  id: string;
+  name: string;
+  email: string;
+  isActive: boolean;
+  createdAt: Date;
 }

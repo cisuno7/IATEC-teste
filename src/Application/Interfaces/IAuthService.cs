@@ -2,10 +2,11 @@ namespace AgendaManager.Application.Interfaces;
 
 public interface IAuthService
 {
-    Task<AuthResult> SignInAsync(string email, string password);
-    Task<AuthResult> SignUpAsync(string email, string password, string name);
     Task<AuthUser?> GetUserAsync(string jwt);
     Task SignOutAsync();
+    string HashPassword(string password);
+    bool VerifyPassword(string password, string hash);
+    string GenerateJwtToken(string userId, string email, string name);
 }
 
 public class AuthResult
