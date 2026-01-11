@@ -57,10 +57,18 @@ import { EventModalComponent } from '../components/event-modal/event-modal.compo
               <div class="event-header">
                 <h3 class="event-title">{{ event.name }}</h3>
                 <div class="event-actions">
-                  <button class="action-button edit" (click)="editEvent(event)" title="Editar">
+                  <button 
+                    class="action-button edit" 
+                    (click)="editEvent(event)" 
+                    title="Editar"
+                    *ngIf="canManageEvent(event)">
                     ✏️
                   </button>
-                  <button class="action-button delete" (click)="deleteEvent(event)" title="Excluir">
+                  <button 
+                    class="action-button delete" 
+                    (click)="deleteEvent(event)" 
+                    title="Excluir"
+                    *ngIf="canManageEvent(event)">
                     🗑️
                   </button>
                 </div>
@@ -100,7 +108,8 @@ import { EventModalComponent } from '../components/event-modal/event-modal.compo
                   [class.activate]="!event.isActive"
                   [class.deactivate]="event.isActive"
                   (click)="toggleEventStatus(event)"
-                  title="{{ event.isActive ? 'Desativar' : 'Ativar' }} evento">
+                  title="{{ event.isActive ? 'Desativar' : 'Ativar' }} evento"
+                  *ngIf="canManageEvent(event)">
                   {{ event.isActive ? 'Desativar' : 'Ativar' }}
                 </button>
 
@@ -442,6 +451,10 @@ import { EventModalComponent } from '../components/event-modal/event-modal.compo
       transition: all 0.2s ease;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      min-width: 120px;
+      white-space: nowrap;
+      overflow: visible;
+      text-overflow: clip;
     }
 
     .toggle-status.activate {
@@ -456,14 +469,14 @@ import { EventModalComponent } from '../components/event-modal/event-modal.compo
     }
 
     .toggle-status.deactivate {
-      background: #ffc107;
-      border-color: #ffc107;
-      color: #212529;
+      background: #dc3545;
+      border-color: #dc3545;
+      color: white;
     }
 
     .toggle-status.deactivate:hover {
-      background: #e0a800;
-      border-color: #e0a800;
+      background: #c82333;
+      border-color: #c82333;
     }
 
     .event-status {

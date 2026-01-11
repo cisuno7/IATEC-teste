@@ -264,30 +264,30 @@ public class EventRepository : Repository<Event>, IEventRepository
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Event>> GetTodayEventsAsync(Guid userId)
+    public async Task<IEnumerable<Event>> GetTodayEventsAsync(Guid userId, bool includeInactive = true)
     {
         var today = DateTime.UtcNow.Date;
         var tomorrow = today.AddDays(1);
 
-        return await GetFilteredEventsAsync(userId, today, tomorrow.AddSeconds(-1));
+        return await GetFilteredEventsAsync(userId, today, tomorrow.AddSeconds(-1), null, includeInactive);
     }
 
-    public async Task<IEnumerable<Event>> GetWeekEventsAsync(Guid userId)
+    public async Task<IEnumerable<Event>> GetWeekEventsAsync(Guid userId, bool includeInactive = true)
     {
         var today = DateTime.UtcNow.Date;
         var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
         var endOfWeek = startOfWeek.AddDays(7).AddSeconds(-1);
 
-        return await GetFilteredEventsAsync(userId, startOfWeek, endOfWeek);
+        return await GetFilteredEventsAsync(userId, startOfWeek, endOfWeek, null, includeInactive);
     }
 
-    public async Task<IEnumerable<Event>> GetMonthEventsAsync(Guid userId)
+    public async Task<IEnumerable<Event>> GetMonthEventsAsync(Guid userId, bool includeInactive = true)
     {
         var today = DateTime.UtcNow.Date;
         var startOfMonth = new DateTime(today.Year, today.Month, 1);
         var endOfMonth = startOfMonth.AddMonths(1).AddSeconds(-1);
 
-        return await GetFilteredEventsAsync(userId, startOfMonth, endOfMonth);
+        return await GetFilteredEventsAsync(userId, startOfMonth, endOfMonth, null, includeInactive);
     }
 
     public async Task<IEnumerable<Event>> GetEventsByTypeAsync(Guid userId, EventType type, bool includeInactive = false)

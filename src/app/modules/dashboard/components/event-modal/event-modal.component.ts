@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
-import { EventService, Event, EventType, CreateEventRequest, UpdateEventRequest, UserOption } from '../../../../core/services/event.service';
+import { EventService, Event, EventType, CreateEventRequest, UpdateEventRequest, UserOption, Participant } from '../../../../core/services/event.service';
 import { AuthService } from '../../../../core/auth/auth.service';
 
 @Component({
@@ -611,19 +611,53 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
   
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['isOpen'] && changes['isOpen'].currentValue) {
-      this.loadAvailableUsers();
-      if (this.event) {
-        this.isEditMode = true;
-        this.loadEventData();
-      } else {
-        this.isEditMode = false;
-        this.eventForm.reset({
-          type: EventType.Exclusive
-        });
-        this.selectedParticipants = [];
-      }
+    const isOpening = this.isModalOpening(changes);
+    const eventChanged = this.isEventChanged(changes);
+
+    if (isOpening || eventChanged) {
+      this.initializeModal();
     }
+  }
+
+  private isModalOpening(changes: SimpleChanges): boolean {
+    return changes['isOpen'] && 
+           changes['isOpen'].currentValue && 
+           !changes['isOpen'].previousValue;
+  }
+
+  private isEventChanged(changes: SimpleChanges): boolean {
+    return changes['event'] && 
+           changes['event'].currentValue !== changes['event'].previousValue;
+  }
+
+  private initializeModal(): void {
+    if (!this.isOpen) return;
+
+    this.loadAvailableUsers();
+    
+    if (this.event) {
+      this.setupEditMode();
+    } else {
+      this.setupCreateMode();
+    }
+  }
+
+  private setupEditMode(): void {
+    this.isEditMode = true;
+    this.loadEventData();
+  }
+
+  private setupCreateMode(): void {
+    this.isEditMode = false;
+    this.resetForm();
+  }
+
+  private resetForm(): void {
+    this.eventForm.reset({
+      type: EventType.Exclusive
+    });
+    this.selectedParticipants = [];
+    this.searchTerm = '';
   }
 
   ngOnDestroy(): void {
@@ -645,48 +679,79 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
   private loadEventData(): void {
     if (!this.event) return;
 
-    const eventDate = new Date(this.event.date);
+    const formData = this.extractFormDataFromEvent();
+    this.eventForm.patchValue(formData);
+    this.markFormAsValid();
+  }
+
+  private markFormAsValid(): void {
+    Object.keys(this.eventForm.controls).forEach(key => {
+      const control = this.eventForm.get(key);
+      if (control) {
+        control.markAsTouched();
+        control.updateValueAndValidity();
+      }
+    });
+    this.eventForm.updateValueAndValidity();
+  }
+
+  private extractFormDataFromEvent(): any {
+    const eventDate = new Date(this.event!.date);
     const dateStr = eventDate.toISOString().split('T')[0];
     const timeStr = eventDate.toTimeString().slice(0, 5);
 
-    this.eventForm.patchValue({
-      name: this.event.name,
-      description: this.event.description,
+    return {
+      name: this.event!.name,
+      description: this.event!.description,
       date: dateStr,
       time: timeStr,
-      location: this.event.location,
-      type: this.event.type
-    });
-
-
-    this.loadAvailableUsers();
+      location: this.event!.location,
+      type: this.event!.type
+    };
   }
 
   private loadAvailableUsers(): void {
     this.eventService.getActiveUsers().pipe(
       takeUntil(this.destroy$)
     ).subscribe({
-      next: (users) => {
-        this.availableUsers = users;
-        this.filteredUsers = users;
-        
-        if (this.isEditMode && this.event && this.event.participants) {
-          this.selectedParticipants = this.event.participants.map(p => {
-            const user = users.find(u => u.id === p.id);
-            return user || {
-              id: p.id,
-              name: p.name,
-              email: p.email,
-              isActive: true,
-              createdAt: new Date()
-            };
-          });
-        }
-      },
-      error: () => {
-        this.errorMessage = 'Erro ao carregar usuários';
-      }
+      next: (users) => this.handleUsersLoaded(users),
+      error: () => this.handleUsersLoadError()
     });
+  }
+
+  private handleUsersLoaded(users: UserOption[]): void {
+    this.availableUsers = users;
+    this.filteredUsers = users;
+    
+    if (this.isEditMode && this.event) {
+      this.loadEventParticipants(users);
+    }
+  }
+
+  private loadEventParticipants(users: UserOption[]): void {
+    if (!this.event?.participants) return;
+
+    this.selectedParticipants = this.event.participants.map(p => 
+      this.mapParticipantToUserOption(p, users)
+    );
+  }
+
+  private mapParticipantToUserOption(participant: Participant, users: UserOption[]): UserOption {
+    const user = users.find(u => u.id === participant.id);
+    
+    if (user) return user;
+
+    return {
+      id: participant.id,
+      name: participant.name,
+      email: participant.email,
+      isActive: true,
+      createdAt: new Date()
+    };
+  }
+
+  private handleUsersLoadError(): void {
+    this.errorMessage = 'Erro ao carregar usuários';
   }
 
   filterUsers(): void {

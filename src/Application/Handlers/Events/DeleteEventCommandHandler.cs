@@ -20,9 +20,7 @@ public class DeleteEventCommandHandler : BaseHandler, ICommandHandler<DeleteEven
         if (!await _unitOfWork.Events.CanUserEditEventAsync(request.EventId, request.UserId))
             throw new UnauthorizedAccessException("User cannot delete this event");
 
-        eventEntity.Deactivate();
-
-        await _unitOfWork.Events.UpdateAsync(eventEntity);
+        await _unitOfWork.Events.RemoveAsync(eventEntity);
         await _unitOfWork.SaveChangesAsync();
 
         return true;

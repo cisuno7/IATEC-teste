@@ -31,13 +31,15 @@ public class EventsController : ControllerBase
     public async Task<IActionResult> GetDashboardEvents(
         [FromQuery] DateTime? startDate,
         [FromQuery] DateTime? endDate,
+        [FromQuery] string? startTime,
+        [FromQuery] string? endTime,
         [FromQuery] string? searchText,
         [FromQuery] string? periodType)
     {
         try
         {
             var userId = GetCurrentUserId();
-            var query = new GetDashboardEventsQuery(userId, startDate, endDate, searchText, periodType);
+            var query = new GetDashboardEventsQuery(userId, startDate, endDate, startTime, endTime, searchText, periodType);
             var result = await _mediator.Send(query);
 
             return Ok(result);

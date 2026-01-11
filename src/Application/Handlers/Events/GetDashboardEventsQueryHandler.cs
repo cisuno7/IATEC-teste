@@ -26,27 +26,50 @@ public class GetDashboardEventsQueryHandler : BaseHandler, IQueryHandler<GetDash
         switch (request.PeriodType?.ToLower())
         {
             case "today":
-                events = await _unitOfWork.Events.GetTodayEventsAsync(request.UserId);
+                events = await _unitOfWork.Events.GetTodayEventsAsync(request.UserId, includeInactive: true);
                 break;
 
             case "week":
-                events = await _unitOfWork.Events.GetWeekEventsAsync(request.UserId);
+                events = await _unitOfWork.Events.GetWeekEventsAsync(request.UserId, includeInactive: true);
                 break;
 
             case "month":
-                events = await _unitOfWork.Events.GetMonthEventsAsync(request.UserId);
+                events = await _unitOfWork.Events.GetMonthEventsAsync(request.UserId, includeInactive: true);
                 break;
 
             default:
+                var startDateTime = CombineDateAndTime(request.StartDate, request.StartTime);
+                var endDateTime = CombineDateAndTime(request.EndDate, request.EndTime);
+                
                 events = await _unitOfWork.Events.GetFilteredEventsAsync(
                     request.UserId,
-                    request.StartDate,
-                    request.EndDate,
-                    request.SearchText);
+                    startDateTime,
+                    endDateTime,
+                    request.SearchText,
+                    includeInactive: true);
                 break;
         }
 
         return events.Select(MapToDto);
+    }
+
+    private DateTime? CombineDateAndTime(DateTime? date, string? time)
+    {
+        if (!date.HasValue && string.IsNullOrWhiteSpace(time))
+            return null;
+
+        if (!date.HasValue)
+            return null;
+
+        if (string.IsNullOrWhiteSpace(time))
+            return date;
+
+        if (TimeSpan.TryParse(time, out var timeSpan))
+        {
+            return date.Value.Date.Add(timeSpan);
+        }
+
+        return date;
     }
 
     private EventDto MapToDto(Domain.Entities.Event eventEntity)
