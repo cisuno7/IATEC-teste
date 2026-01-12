@@ -18,6 +18,8 @@ dist/
 *.swp
 *.swo
 
+.angular/
+
 # OS
 .DS_Store
 Thumbs.db
