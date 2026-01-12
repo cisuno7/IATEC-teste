@@ -68,10 +68,18 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      background-size: 200% 200%;
+      animation: gradientShift 8s ease infinite;
       padding: 20px;
       position: relative;
       overflow: hidden;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
 
     .login-container::before {
@@ -81,25 +89,44 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
       right: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-      animation: pulse 15s ease-in-out infinite;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+      animation: pulse 20s ease-in-out infinite;
+    }
+
+    .login-container::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -30%;
+      width: 150%;
+      height: 150%;
+      background: radial-gradient(circle, rgba(240,147,251,0.2) 0%, transparent 70%);
+      animation: pulseReverse 25s ease-in-out infinite;
     }
 
     @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.5; }
-      50% { transform: scale(1.1); opacity: 0.8; }
+      0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.4; }
+      50% { transform: scale(1.2) rotate(180deg); opacity: 0.7; }
+    }
+
+    @keyframes pulseReverse {
+      0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.3; }
+      50% { transform: scale(1.15) rotate(-180deg); opacity: 0.6; }
     }
 
     .login-card {
-      background: white;
-      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
       padding: 48px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.3);
       width: 100%;
       max-width: 420px;
       position: relative;
       z-index: 1;
-      animation: slideUp 0.4s ease-out;
+      animation: slideUp 0.5s ease-out;
+      border: 1px solid rgba(255, 255, 255, 0.5);
     }
 
     @keyframes slideUp {
@@ -229,6 +256,47 @@ import { AuthService, LoginRequest } from '../../../core/auth/auth.service';
     .register-button:hover {
       color: #764ba2;
       text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .login-container {
+        padding: 16px;
+      }
+
+      .login-card {
+        padding: 32px 24px;
+        border-radius: 20px;
+      }
+
+      .login-title {
+        font-size: 28px;
+      }
+
+      .login-subtitle {
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        padding: 28px 20px;
+        border-radius: 16px;
+      }
+
+      .login-title {
+        font-size: 24px;
+      }
+
+      .form-input {
+        padding: 12px 16px;
+        font-size: 15px;
+      }
+
+      .login-button {
+        padding: 14px;
+        font-size: 15px;
+      }
     }
   `]
 })
