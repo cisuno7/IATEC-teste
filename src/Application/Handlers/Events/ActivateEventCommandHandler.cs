@@ -6,8 +6,8 @@ namespace AgendaManager.Application.Handlers.Events;
 
 public class ActivateEventCommandHandler : BaseHandler, ICommandHandler<ActivateEventCommand, bool>
 {
-    public ActivateEventCommandHandler(IUnitOfWork unitOfWork)
-        : base(unitOfWork)
+    public ActivateEventCommandHandler(IUnitOfWork unitOfWork, IDateTimeProvider dateTimeProvider)
+        : base(unitOfWork, dateTimeProvider)
     {
     }
 

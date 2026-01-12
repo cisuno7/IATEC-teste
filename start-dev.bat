@@ -46,8 +46,8 @@ echo Dependencias instaladas com sucesso!
 echo.
 echo Para executar o projeto:
 echo.
-echo 1. Terminal 1 - Backend:
-echo    dotnet run --project AgendaManager.Api.csproj
+echo 1. Terminal 1 - Backend (com Hot Reload):
+echo    dotnet watch run --project AgendaManager.Api.csproj
 echo.
 echo 2. Terminal 2 - Frontend:
 echo    npm start

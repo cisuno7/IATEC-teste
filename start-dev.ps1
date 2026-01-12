@@ -63,8 +63,8 @@ Write-Host "Dependências instaladas com sucesso!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Para executar o projeto:" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "1. Terminal 1 - Backend:" -ForegroundColor White
-Write-Host "   dotnet run --project AgendaManager.Api.csproj" -ForegroundColor Gray
+Write-Host "1. Terminal 1 - Backend (com Hot Reload):" -ForegroundColor White
+Write-Host "   dotnet watch run --project AgendaManager.Api.csproj" -ForegroundColor Gray
 Write-Host ""
 Write-Host "2. Terminal 2 - Frontend:" -ForegroundColor White
 Write-Host "   npm start" -ForegroundColor Gray

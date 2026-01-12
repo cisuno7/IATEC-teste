@@ -7,8 +7,8 @@ namespace AgendaManager.Application.Handlers.Users;
 
 public class GetActiveUsersQueryHandler : BaseHandler, IQueryHandler<GetActiveUsersQuery, IEnumerable<UserDto>>
 {
-    public GetActiveUsersQueryHandler(IUnitOfWork unitOfWork)
-        : base(unitOfWork)
+    public GetActiveUsersQueryHandler(IUnitOfWork unitOfWork, IDateTimeProvider dateTimeProvider)
+        : base(unitOfWork, dateTimeProvider)
     {
     }
 

@@ -8,8 +8,8 @@ namespace AgendaManager.Application.Handlers.Events;
 
 public class UpdateEventCommandHandler : BaseHandler, ICommandHandler<UpdateEventCommand, EventDto>
 {
-    public UpdateEventCommandHandler(IUnitOfWork unitOfWork)
-        : base(unitOfWork)
+    public UpdateEventCommandHandler(IUnitOfWork unitOfWork, IDateTimeProvider dateTimeProvider)
+        : base(unitOfWork, dateTimeProvider)
     {
     }
 
@@ -38,7 +38,7 @@ public class UpdateEventCommandHandler : BaseHandler, ICommandHandler<UpdateEven
         eventEntity.Update(
             request.EventData.Name,
             request.EventData.Description,
-            request.EventData.Date,
+            _dateTimeProvider.ToUtc(request.EventData.Date),
             request.EventData.Location,
             request.EventData.Type
         );

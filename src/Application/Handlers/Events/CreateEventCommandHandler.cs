@@ -8,8 +8,8 @@ namespace AgendaManager.Application.Handlers.Events;
 
 public class CreateEventCommandHandler : BaseHandler, ICommandHandler<CreateEventCommand, EventDto>
 {
-    public CreateEventCommandHandler(IUnitOfWork unitOfWork)
-        : base(unitOfWork)
+    public CreateEventCommandHandler(IUnitOfWork unitOfWork, IDateTimeProvider dateTimeProvider)
+        : base(unitOfWork, dateTimeProvider)
     {
     }
 
@@ -38,7 +38,7 @@ public class CreateEventCommandHandler : BaseHandler, ICommandHandler<CreateEven
         var eventEntity = Event.Create(
             request.EventData.Name,
             request.EventData.Description,
-            request.EventData.Date,
+            _dateTimeProvider.ToUtc(request.EventData.Date),
             request.EventData.Location,
             request.EventData.Type,
             request.CreatorId

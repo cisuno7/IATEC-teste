@@ -30,6 +30,10 @@ import { EventModalComponent } from '../components/event-modal/event-modal.compo
 
         <app-filters (filtersChanged)="onFiltersChanged($event)"></app-filters>
 
+        <div class="error-message" *ngIf="errorMessage">
+          {{ errorMessage }}
+        </div>
+
         <app-event-modal
           [isOpen]="isModalOpen"
           [event]="selectedEvent"
@@ -232,6 +236,17 @@ import { EventModalComponent } from '../components/event-modal/event-modal.compo
       font-size: 24px;
       font-weight: 300;
       line-height: 1;
+    }
+
+    .error-message {
+      background: #fee;
+      color: #c33;
+      padding: 16px 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border: 2px solid #fcc;
+      font-weight: 600;
+      font-size: 14px;
     }
 
     .events-section {
@@ -538,6 +553,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   currentFilters: EventFilters = {};
   isModalOpen = false;
   selectedEvent: Event | null = null;
+  errorMessage = '';
 
   private destroy$ = new Subject<void>();
 
@@ -569,10 +585,16 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       next: (events) => {
         this.events = events;
         this.isLoading = false;
+        this.errorMessage = '';
       },
       error: (error) => {
-        console.error('Erro ao carregar eventos:', error);
         this.isLoading = false;
+        if (error.status === 400) {
+          this.errorMessage = error.error?.message || error.error || 'Intervalo de datas inválido';
+        } else {
+          this.errorMessage = 'Erro ao carregar eventos';
+          console.error('Erro ao carregar eventos:', error);
+        }
       }
     });
   }
@@ -610,13 +632,22 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   }
 
   openCreateEventModal(): void {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.page.ts:612',message:'openCreateEventModal called',data:{eventsCount:this.events.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     this.selectedEvent = null;
     this.isModalOpen = true;
   }
 
   editEvent(event: Event): void {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.page.ts:617',message:'editEvent called',data:{eventId:event.id,eventName:event.name,creatorId:event.creatorId,hasParticipants:!!event.participants,participantsCount:event.participants?.length||0,eventType:event.type,isActive:event.isActive},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     this.selectedEvent = event;
     this.isModalOpen = true;
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.page.ts:620',message:'editEvent modal opened',data:{isModalOpen:this.isModalOpen,selectedEventId:this.selectedEvent?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
   }
 
   closeModal(): void {
@@ -625,6 +656,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   }
 
   onEventSaved(event: Event): void {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.page.ts:627',message:'onEventSaved called',data:{savedEventId:event.id,savedEventName:event.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     this.loadEvents();
     this.closeModal();
   }

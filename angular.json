@@ -63,7 +63,8 @@
               "buildTarget": "agenda-manager:build:production"
             },
             "development": {
-              "buildTarget": "agenda-manager:build:development"
+              "buildTarget": "agenda-manager:build:development",
+              "hmr": true
             }
           },
           "defaultConfiguration": "development"

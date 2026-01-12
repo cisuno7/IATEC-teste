@@ -1,4 +1,5 @@
 using AgendaManager.Application.DTOs;
+using AgendaManager.Application.Exceptions;
 using AgendaManager.Application.Interfaces;
 using AgendaManager.Application.Queries.Events;
 using AgendaManager.Domain.Interfaces;
@@ -7,8 +8,8 @@ namespace AgendaManager.Application.Handlers.Events;
 
 public class GetDashboardEventsQueryHandler : BaseHandler, IQueryHandler<GetDashboardEventsQuery, IEnumerable<EventDto>>
 {
-    public GetDashboardEventsQueryHandler(IUnitOfWork unitOfWork)
-        : base(unitOfWork)
+    public GetDashboardEventsQueryHandler(IUnitOfWork unitOfWork, IDateTimeProvider dateTimeProvider)
+        : base(unitOfWork, dateTimeProvider)
     {
     }
 
@@ -21,36 +22,69 @@ public class GetDashboardEventsQueryHandler : BaseHandler, IQueryHandler<GetDash
         if (!user.IsActive)
             throw new InvalidOperationException("User is not active");
 
-        IEnumerable<Domain.Entities.Event> events;
+        var (startDateTime, endDateTime) = ResolveDateRange(request);
 
-        switch (request.PeriodType?.ToLower())
-        {
-            case "today":
-                events = await _unitOfWork.Events.GetTodayEventsAsync(request.UserId, includeInactive: true);
-                break;
+        ValidateDateRange(startDateTime, endDateTime);
 
-            case "week":
-                events = await _unitOfWork.Events.GetWeekEventsAsync(request.UserId, includeInactive: true);
-                break;
-
-            case "month":
-                events = await _unitOfWork.Events.GetMonthEventsAsync(request.UserId, includeInactive: true);
-                break;
-
-            default:
-                var startDateTime = CombineDateAndTime(request.StartDate, request.StartTime);
-                var endDateTime = CombineDateAndTime(request.EndDate, request.EndTime);
-                
-                events = await _unitOfWork.Events.GetFilteredEventsAsync(
-                    request.UserId,
-                    startDateTime,
-                    endDateTime,
-                    request.SearchText,
-                    includeInactive: true);
-                break;
-        }
+        var events = await _unitOfWork.Events.GetFilteredEventsAsync(
+            request.UserId,
+            startDateTime,
+            endDateTime,
+            request.SearchText,
+            includeInactive: true);
 
         return events.Select(MapToDto);
+    }
+
+    private (DateTime?, DateTime?) ResolveDateRange(GetDashboardEventsQuery request)
+    {
+        if (!string.IsNullOrWhiteSpace(request.PeriodType))
+        {
+            return ResolvePeriodType(request.PeriodType);
+        }
+
+        var normalizedStartDate = _dateTimeProvider.ToUtc(request.StartDate);
+        var normalizedEndDate = _dateTimeProvider.ToUtc(request.EndDate);
+
+        var startDateTime = CombineDateAndTime(normalizedStartDate, request.StartTime);
+        var endDateTime = CombineDateAndTime(normalizedEndDate, request.EndTime);
+
+        return (startDateTime, endDateTime);
+    }
+
+    private (DateTime?, DateTime?) ResolvePeriodType(string periodType)
+    {
+        var now = _dateTimeProvider.UtcNow;
+        var today = _dateTimeProvider.ToUtcDateOnly(now);
+
+        return periodType.ToLower() switch
+        {
+            "today" => (today, today.AddDays(1).AddSeconds(-1)),
+            "week" => (GetStartOfWeek(today), GetStartOfWeek(today).AddDays(7).AddSeconds(-1)),
+            "month" => (GetStartOfMonth(today), GetStartOfMonth(today).AddMonths(1).AddSeconds(-1)),
+            _ => (null, null)
+        };
+    }
+
+    private DateTime GetStartOfWeek(DateTime date)
+    {
+        var diff = (7 + (date.DayOfWeek - DayOfWeek.Sunday)) % 7;
+        var startOfWeek = date.AddDays(-1 * diff);
+        return new DateTime(startOfWeek.Year, startOfWeek.Month, startOfWeek.Day, 0, 0, 0, DateTimeKind.Utc);
+    }
+
+    private DateTime GetStartOfMonth(DateTime date)
+    {
+        return new DateTime(date.Year, date.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+    }
+
+    private void ValidateDateRange(DateTime? startDate, DateTime? endDate)
+    {
+        if (!startDate.HasValue || !endDate.HasValue)
+            return;
+
+        if (endDate.Value < startDate.Value)
+            throw new InvalidDateRangeException("End date cannot be earlier than start date");
     }
 
     private DateTime? CombineDateAndTime(DateTime? date, string? time)
@@ -61,15 +95,18 @@ public class GetDashboardEventsQueryHandler : BaseHandler, IQueryHandler<GetDash
         if (!date.HasValue)
             return null;
 
+        var normalizedDate = _dateTimeProvider.ToUtc(date.Value);
+        
         if (string.IsNullOrWhiteSpace(time))
-            return date;
+            return normalizedDate;
 
         if (TimeSpan.TryParse(time, out var timeSpan))
         {
-            return date.Value.Date.Add(timeSpan);
+            var dateOnly = new DateTime(normalizedDate.Year, normalizedDate.Month, normalizedDate.Day, 0, 0, 0, DateTimeKind.Utc);
+            return dateOnly.Add(timeSpan);
         }
 
-        return date;
+        return normalizedDate;
     }
 
     private EventDto MapToDto(Domain.Entities.Event eventEntity)

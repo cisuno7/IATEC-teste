@@ -256,7 +256,10 @@ public class EventRepository : Repository<Event>, IEventRepository
             query = query.Where(e =>
                 e.Name.Value.ToLower().Contains(searchTerm) ||
                 e.Description.Value.ToLower().Contains(searchTerm) ||
-                e.Location.Value.ToLower().Contains(searchTerm));
+                e.Location.Value.ToLower().Contains(searchTerm) ||
+                (e.Creator != null && e.Creator.Name.ToLower().Contains(searchTerm)) ||
+                (e.Creator != null && e.Creator.Email.Value.ToLower().Contains(searchTerm)) ||
+                e.Participants.Any(p => p.Name.ToLower().Contains(searchTerm)));
         }
 
         return await query
@@ -264,31 +267,6 @@ public class EventRepository : Repository<Event>, IEventRepository
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Event>> GetTodayEventsAsync(Guid userId, bool includeInactive = true)
-    {
-        var today = DateTime.UtcNow.Date;
-        var tomorrow = today.AddDays(1);
-
-        return await GetFilteredEventsAsync(userId, today, tomorrow.AddSeconds(-1), null, includeInactive);
-    }
-
-    public async Task<IEnumerable<Event>> GetWeekEventsAsync(Guid userId, bool includeInactive = true)
-    {
-        var today = DateTime.UtcNow.Date;
-        var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
-        var endOfWeek = startOfWeek.AddDays(7).AddSeconds(-1);
-
-        return await GetFilteredEventsAsync(userId, startOfWeek, endOfWeek, null, includeInactive);
-    }
-
-    public async Task<IEnumerable<Event>> GetMonthEventsAsync(Guid userId, bool includeInactive = true)
-    {
-        var today = DateTime.UtcNow.Date;
-        var startOfMonth = new DateTime(today.Year, today.Month, 1);
-        var endOfMonth = startOfMonth.AddMonths(1).AddSeconds(-1);
-
-        return await GetFilteredEventsAsync(userId, startOfMonth, endOfMonth, null, includeInactive);
-    }
 
     public async Task<IEnumerable<Event>> GetEventsByTypeAsync(Guid userId, EventType type, bool includeInactive = false)
     {

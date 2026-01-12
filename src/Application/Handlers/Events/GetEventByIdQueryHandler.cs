@@ -7,8 +7,8 @@ namespace AgendaManager.Application.Handlers.Events;
 
 public class GetEventByIdQueryHandler : BaseHandler, IQueryHandler<GetEventByIdQuery, EventDto>
 {
-    public GetEventByIdQueryHandler(IUnitOfWork unitOfWork)
-        : base(unitOfWork)
+    public GetEventByIdQueryHandler(IUnitOfWork unitOfWork, IDateTimeProvider dateTimeProvider)
+        : base(unitOfWork, dateTimeProvider)
     {
     }
 

@@ -42,11 +42,14 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AgendaManager.Application.Handlers.Events.CreateEventCommandHandler).Assembly);
 });
 
+builder.Services.AddAutoMapper(typeof(EventProfile).Assembly);
+
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuthService>(provider => new AuthService(jwtSecret));
 builder.Services.AddScoped<ITokenExtractor, TokenExtractor>();
+builder.Services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

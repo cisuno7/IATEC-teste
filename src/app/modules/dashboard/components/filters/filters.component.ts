@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, AbstractControl, ValidationErrors } from '@angular/forms';
 import { EventFilters } from '../../../../core/services/event.service';
 
 @Component({
@@ -45,6 +45,7 @@ import { EventFilters } from '../../../../core/services/event.service';
               type="date"
               formControlName="startDate"
               class="filter-input"
+              [class.error]="isDateRangeInvalid()"
             >
           </div>
 
@@ -54,6 +55,7 @@ import { EventFilters } from '../../../../core/services/event.service';
               type="time"
               formControlName="startTime"
               class="filter-input"
+              [class.error]="isDateRangeInvalid()"
             >
           </div>
 
@@ -63,6 +65,7 @@ import { EventFilters } from '../../../../core/services/event.service';
               type="date"
               formControlName="endDate"
               class="filter-input"
+              [class.error]="isDateRangeInvalid()"
             >
           </div>
 
@@ -72,8 +75,13 @@ import { EventFilters } from '../../../../core/services/event.service';
               type="time"
               formControlName="endTime"
               class="filter-input"
+              [class.error]="isDateRangeInvalid()"
             >
           </div>
+        </div>
+
+        <div class="error-message" *ngIf="isDateRangeInvalid()">
+          Data final deve ser maior ou igual à data inicial
         </div>
 
         <div class="filter-row">
@@ -82,7 +90,7 @@ import { EventFilters } from '../../../../core/services/event.service';
             <input
               type="text"
               formControlName="searchText"
-              placeholder="Nome, descrição ou local..."
+              placeholder="Nome, descrição, local, criador ou participantes..."
               class="filter-input search-input"
             >
           </div>
@@ -222,6 +230,22 @@ import { EventFilters } from '../../../../core/services/event.service';
       box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
     }
 
+    .filter-input.error {
+      border-color: #dc3545;
+      background: #fff5f5;
+    }
+
+    .error-message {
+      color: #dc3545;
+      font-size: 13px;
+      margin-top: 8px;
+      font-weight: 500;
+      padding: 12px 16px;
+      background: #fff5f5;
+      border: 1px solid #fcc;
+      border-radius: 8px;
+    }
+
     .search-input {
       width: 100%;
     }
@@ -270,46 +294,107 @@ export class FiltersComponent {
       startTime: [''],
       endTime: [''],
       searchText: ['']
-    });
+    }, { validators: this.dateRangeValidator });
+  }
+
+  private dateRangeValidator = (control: AbstractControl): ValidationErrors | null => {
+    const startDate = control.get('startDate')?.value;
+    const endDate = control.get('endDate')?.value;
+    const startTime = control.get('startTime')?.value;
+    const endTime = control.get('endTime')?.value;
+
+    if (!startDate || !endDate) {
+      return null;
+    }
+
+    const startDateTime = this.combineDateAndTime(startDate, startTime);
+    const endDateTime = this.combineDateAndTime(endDate, endTime);
+
+    if (startDateTime && endDateTime && endDateTime < startDateTime) {
+      return { invalidDateRange: true };
+    }
+
+    return null;
+  };
+
+  private combineDateAndTime(date: string, time: string): Date | null {
+    if (!date) return null;
+
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) return null;
+
+    if (time) {
+      const [hours, minutes] = time.split(':').map(Number);
+      dateObj.setHours(hours, minutes, 0, 0);
+    } else {
+      dateObj.setHours(0, 0, 0, 0);
+    }
+
+    return dateObj;
   }
 
   private setupFormSubscriptions(): void {
-    this.filtersForm.valueChanges.subscribe(value => {
-      this.emitFilters();
+    this.filtersForm.valueChanges.subscribe(() => {
+      if (this.filtersForm.valid || !this.hasDateFilters()) {
+        this.emitFilters();
+      }
     });
+  }
+
+  private hasDateFilters(): boolean {
+    const formValue = this.filtersForm.value;
+    return !!(formValue.startDate || formValue.endDate);
+  }
+
+  isDateRangeInvalid(): boolean {
+    return this.filtersForm.hasError('invalidDateRange');
   }
 
   selectPeriod(period: 'today' | 'week' | 'month'): void {
     if (this.selectedPeriod === period) {
       this.selectedPeriod = null;
-    } else {
-      this.selectedPeriod = period;
+      this.emitFilters();
+      return;
     }
+
+    this.selectedPeriod = period;
+    
+    this.filtersForm.patchValue({
+      startDate: '',
+      endDate: '',
+      startTime: '',
+      endTime: ''
+    }, { emitEvent: false });
+    
     this.emitFilters();
   }
 
   private emitFilters(): void {
+    if (this.filtersForm.invalid && this.hasDateFilters()) {
+      return;
+    }
+
     const formValue = this.filtersForm.value;
     const filters: EventFilters = {};
 
     if (this.selectedPeriod) {
       filters.periodType = this.selectedPeriod;
-    }
+    } else {
+      if (formValue.startDate) {
+        filters.startDate = new Date(formValue.startDate);
+      }
 
-    if (formValue.startDate) {
-      filters.startDate = new Date(formValue.startDate);
-    }
+      if (formValue.endDate) {
+        filters.endDate = new Date(formValue.endDate);
+      }
 
-    if (formValue.endDate) {
-      filters.endDate = new Date(formValue.endDate);
-    }
+      if (formValue.startTime) {
+        filters.startTime = formValue.startTime;
+      }
 
-    if (formValue.startTime) {
-      filters.startTime = formValue.startTime;
-    }
-
-    if (formValue.endTime) {
-      filters.endTime = formValue.endTime;
+      if (formValue.endTime) {
+        filters.endTime = formValue.endTime;
+      }
     }
 
     if (formValue.searchText?.trim()) {

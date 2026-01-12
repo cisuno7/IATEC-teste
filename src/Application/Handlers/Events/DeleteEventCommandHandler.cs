@@ -6,8 +6,8 @@ namespace AgendaManager.Application.Handlers.Events;
 
 public class DeleteEventCommandHandler : BaseHandler, ICommandHandler<DeleteEventCommand, bool>
 {
-    public DeleteEventCommandHandler(IUnitOfWork unitOfWork)
-        : base(unitOfWork)
+    public DeleteEventCommandHandler(IUnitOfWork unitOfWork, IDateTimeProvider dateTimeProvider)
+        : base(unitOfWork, dateTimeProvider)
     {
     }
 

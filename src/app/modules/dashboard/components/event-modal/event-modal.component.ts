@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, OnChanges, SimpleChanges, ChangeDetectorRef, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { EventService, Event, EventType, CreateEventRequest, UpdateEventRequest, UserOption, Participant } from '../../../../core/services/event.service';
@@ -162,7 +162,7 @@ import { AuthService } from '../../../../core/auth/auth.service';
             <button type="button" class="cancel-button" (click)="close()">
               Cancelar
             </button>
-            <button type="submit" class="submit-button" [disabled]="eventForm.invalid || isLoading">
+            <button type="submit" class="submit-button" [disabled]="eventForm.invalid || isLoading" #saveButton>
               <span *ngIf="isLoading">{{ isEditMode ? 'Salvando...' : 'Criando...' }}</span>
               <span *ngIf="!isLoading">{{ isEditMode ? 'Salvar' : 'Criar Evento' }}</span>
             </button>
@@ -572,7 +572,7 @@ import { AuthService } from '../../../../core/auth/auth.service';
     }
   `]
 })
-export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
+export class EventModalComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
   @Input() isOpen = false;
   @Input() event: Event | null = null;
   @Output() closeModal = new EventEmitter<void>();
@@ -589,16 +589,21 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
   searchTerm = '';
 
   private destroy$ = new Subject<void>();
+  @ViewChild('saveButton', { static: false }) saveButton?: ElementRef<HTMLButtonElement>;
 
   constructor(
     private fb: FormBuilder,
     private eventService: EventService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {
     this.eventForm = this.createForm();
   }
 
   ngOnInit(): void {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:601',message:'ngOnInit called',data:{formValid:this.eventForm.valid,formStatus:this.eventForm.status,isOpen:this.isOpen,hasEvent:!!this.event},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     this.eventForm.get('type')?.valueChanges.pipe(
       takeUntil(this.destroy$)
     ).subscribe(() => {
@@ -606,11 +611,38 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
         this.selectedParticipants = [];
       }
     });
+    this.eventForm.statusChanges.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.validateFormState();
+    });
+  }
+
+  ngAfterViewInit(): void {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:611',message:'ngAfterViewInit called',data:{formValid:this.eventForm.valid,formStatus:this.eventForm.status,isOpen:this.isOpen,hasEvent:!!this.event},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    setTimeout(() => this.validateFormState(), 100);
+  }
+
+  private validateFormState(): void {
+    const controlsState: any = {};
+    Object.keys(this.eventForm.controls).forEach(key => {
+      const control = this.eventForm.get(key);
+      if (control) {
+        controlsState[key] = {valid:control.valid,status:control.status,errors:control.errors,dirty:control.dirty,touched:control.touched,value:control.value};
+      }
+    });
+    const buttonDisabled = this.eventForm.invalid || this.isLoading;
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:625',message:'validateFormState',data:{formValid:this.eventForm.valid,formStatus:this.eventForm.status,formDirty:this.eventForm.dirty,formTouched:this.eventForm.touched,buttonDisabled,isLoading:this.isLoading,isEditMode:this.isEditMode,controlsState},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
   }
 
   
 
   ngOnChanges(changes: SimpleChanges): void {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:613',message:'ngOnChanges called',data:{isOpenChanged:!!changes['isOpen'],eventChanged:!!changes['event'],isOpenCurrent:this.isOpen,hasEvent:!!this.event,formValid:this.eventForm.valid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     const isOpening = this.isModalOpening(changes);
     const eventChanged = this.isEventChanged(changes);
 
@@ -631,8 +663,13 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private initializeModal(): void {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:633',message:'initializeModal START',data:{isOpen:this.isOpen,hasEvent:!!this.event,formValid:this.eventForm.valid,formStatus:this.eventForm.status,isLoading:this.isLoading},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     if (!this.isOpen) return;
 
+    this.isLoading = false;
+    this.errorMessage = '';
     this.loadAvailableUsers();
     
     if (this.event) {
@@ -640,9 +677,15 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
     } else {
       this.setupCreateMode();
     }
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:643',message:'initializeModal END',data:{isEditMode:this.isEditMode,formValid:this.eventForm.valid,isLoading:this.isLoading},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
   }
 
   private setupEditMode(): void {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:645',message:'setupEditMode START',data:{eventId:this.event?.id,eventName:this.event?.name,formValid:this.eventForm.valid,availableUsersCount:this.availableUsers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     this.isEditMode = true;
     this.loadEventData();
   }
@@ -679,12 +722,31 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
   private loadEventData(): void {
     if (!this.event) return;
 
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:679',message:'loadEventData BEFORE patchValue',data:{formValid:this.eventForm.valid,formStatus:this.eventForm.status,formDirty:this.eventForm.dirty,formTouched:this.eventForm.touched,availableUsersCount:this.availableUsers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     const formData = this.extractFormDataFromEvent();
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:683',message:'loadEventData formData extracted',data:{formDataKeys:Object.keys(formData),formDataValues:formData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     this.eventForm.patchValue(formData);
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:684',message:'loadEventData AFTER patchValue',data:{formValid:this.eventForm.valid,formStatus:this.eventForm.status,formDirty:this.eventForm.dirty,formTouched:this.eventForm.touched},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     this.markFormAsValid();
   }
 
   private markFormAsValid(): void {
+    // #region agent log
+    const controlsBefore: any = {};
+    Object.keys(this.eventForm.controls).forEach(key => {
+      const control = this.eventForm.get(key);
+      if (control) {
+        controlsBefore[key] = {valid:control.valid,status:control.status,errors:control.errors,dirty:control.dirty,touched:control.touched};
+      }
+    });
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:687',message:'markFormAsValid BEFORE',data:{formValid:this.eventForm.valid,formStatus:this.eventForm.status,controlsBefore},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     Object.keys(this.eventForm.controls).forEach(key => {
       const control = this.eventForm.get(key);
       if (control) {
@@ -693,6 +755,20 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
       }
     });
     this.eventForm.updateValueAndValidity();
+    // #region agent log
+    const controlsAfter: any = {};
+    Object.keys(this.eventForm.controls).forEach(key => {
+      const control = this.eventForm.get(key);
+      if (control) {
+        controlsAfter[key] = {valid:control.valid,status:control.status,errors:control.errors,dirty:control.dirty,touched:control.touched};
+      }
+    });
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:696',message:'markFormAsValid AFTER',data:{formValid:this.eventForm.valid,formStatus:this.eventForm.status,controlsAfter},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    this.cdr.detectChanges();
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:697',message:'markFormAsValid AFTER detectChanges',data:{formValid:this.eventForm.valid,formStatus:this.eventForm.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
   }
 
   private extractFormDataFromEvent(): any {
@@ -711,6 +787,9 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private loadAvailableUsers(): void {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:713',message:'loadAvailableUsers START',data:{isEditMode:this.isEditMode,hasEvent:!!this.event,formValid:this.eventForm.valid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     this.eventService.getActiveUsers().pipe(
       takeUntil(this.destroy$)
     ).subscribe({
@@ -720,11 +799,17 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private handleUsersLoaded(users: UserOption[]): void {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:722',message:'handleUsersLoaded',data:{usersCount:users.length,isEditMode:this.isEditMode,hasEvent:!!this.event,formValid:this.eventForm.valid,formStatus:this.eventForm.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     this.availableUsers = users;
     this.filteredUsers = users;
     
     if (this.isEditMode && this.event) {
       this.loadEventParticipants(users);
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/647be4f8-ea9a-4e02-9161-165c2d52a95e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-modal.component.ts:728',message:'handleUsersLoaded AFTER loadEventParticipants',data:{formValid:this.eventForm.valid,formStatus:this.eventForm.status,selectedParticipantsCount:this.selectedParticipants.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     }
   }
 
@@ -887,6 +972,7 @@ export class EventModalComponent implements OnInit, OnDestroy, OnChanges {
     this.searchTerm = '';
     this.errorMessage = '';
     this.isEditMode = false;
+    this.isLoading = false;
     this.event = null;
     this.closeModal.emit();
   }
