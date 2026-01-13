@@ -325,8 +325,9 @@ O projeto precisa de **dois terminais** rodando simultaneamente: um para o backe
 ### Terminal 1 - Backend (.NET API)
 
 ```powershell
-# Navegar até a raiz do projeto
-cd C:\Users\Cisun\teste-IATEC
+# Navegar até a raiz onde o projeto foi instalado
+#rodar o projeto
+dotnet run 
 
 # Executar com Hot Reload (recomendado para desenvolvimento)
 dotnet watch run --project AgendaManager.Api.csproj
