@@ -521,5 +521,24 @@ Este projeto foi desenvolvido como parte do desafio técnico IATEC, demonstrando
 - ✅ Qualidade de código profissional
 
 ---
+🔐 Usuários de Teste
+
+Para facilitar a avaliação do sistema, já existem usuários de teste cadastrados no banco de dados.
+
+👤 Usuário 1 — Criador de Eventos
+
+Email: cisuno7@hotmail.com
+
+Senha: G77142153
+
+Perfil: Usuário ativo com eventos criados (exclusivos e compartilhados)
+
+👤 Usuário 2 — Participante de Eventos
+
+Email: gabrielpptorres@gmail.com
+
+Senha: Ga77142153
+
+Perfil: Usuário ativo que participa de eventos compartilhados
 
 **Desenvolvido com Clean Architecture, DDD, SOLID e CQRS** 
