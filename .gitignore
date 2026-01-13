@@ -27,3 +27,7 @@ Thumbs.db
 # Database
 *.db
 *.sqlite
+
+# Markdown files (except README.md)
+*.md
+!README.md
