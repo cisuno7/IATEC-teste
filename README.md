@@ -334,7 +334,7 @@ dotnet watch run --project AgendaManager.Api.csproj
 
 **O backend estará disponível em:**
 - 🌐 API:`http://localhost:5000`
-- 📚 Swagger: `https://localhost:5001/swagger`
+- 📚 Swagger: `https://localhost:5000/swagger`
 
 ### Terminal 2 - Frontend (Angular)
 
