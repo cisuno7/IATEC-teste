@@ -521,4 +521,4 @@ Este projeto foi desenvolvido como parte do desafio técnico IATEC, demonstrando
 
 ---
 
-**Desenvolvido com Clean Architecture, DDD, SOLID e CQRS** 🏗️
+**Desenvolvido com Clean Architecture, DDD, SOLID e CQRS** 
