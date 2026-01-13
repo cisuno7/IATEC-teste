@@ -1,4 +1,5 @@
 using AgendaManager.Domain.ValueObjects;
+using Xunit;
 
 namespace AgendaManager.Domain.Tests;
 

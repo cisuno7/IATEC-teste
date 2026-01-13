@@ -1,8 +1,8 @@
 namespace AgendaManager.Domain.ValueObjects;
 
-public class Email
+public sealed class Email : IEquatable<Email>
 {
-    public string Value { get; private set; }
+    public string Value { get; }
 
     private Email(string value)
     {
@@ -23,11 +23,17 @@ public class Email
         return new Email(email.ToLower().Trim());
     }
 
+    public bool Equals(Email? other)
+    {
+        if (other is null)
+            return false;
+
+        return Value == other.Value;
+    }
+
     public override bool Equals(object? obj)
     {
-        if (obj is Email email)
-            return Value == email.Value;
-        return false;
+        return obj is Email other && Equals(other);
     }
 
     public override int GetHashCode()
@@ -38,5 +44,21 @@ public class Email
     public override string ToString()
     {
         return Value;
+    }
+
+    public static bool operator ==(Email? left, Email? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        if (left is null || right is null)
+            return false;
+
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(Email? left, Email? right)
+    {
+        return !(left == right);
     }
 }

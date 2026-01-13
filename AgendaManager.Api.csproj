@@ -8,10 +8,11 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EnableDefaultContentItems>false</EnableDefaultContentItems>
     <HotReloadEnabled>true</HotReloadEnabled>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="src\**\*.cs" Exclude="src\Domain.Tests\**\*.cs" />
+    <Compile Include="src\**\*.cs" Exclude="src\Domain.Tests\**\*.cs;src\Application.Tests\**\*.cs;**\obj\**\*.cs;**\bin\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,8 +1,8 @@
 namespace AgendaManager.Domain.ValueObjects;
 
-public class EventDescription
+public sealed class EventDescription : IEquatable<EventDescription>
 {
-    public string Value { get; private set; }
+    public string Value { get; }
 
     private EventDescription(string value)
     {
@@ -20,11 +20,17 @@ public class EventDescription
         return new EventDescription(description.Trim());
     }
 
+    public bool Equals(EventDescription? other)
+    {
+        if (other is null)
+            return false;
+
+        return Value == other.Value;
+    }
+
     public override bool Equals(object? obj)
     {
-        if (obj is EventDescription description)
-            return Value == description.Value;
-        return false;
+        return obj is EventDescription other && Equals(other);
     }
 
     public override int GetHashCode()
@@ -35,5 +41,21 @@ public class EventDescription
     public override string ToString()
     {
         return Value;
+    }
+
+    public static bool operator ==(EventDescription? left, EventDescription? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        if (left is null || right is null)
+            return false;
+
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(EventDescription? left, EventDescription? right)
+    {
+        return !(left == right);
     }
 }

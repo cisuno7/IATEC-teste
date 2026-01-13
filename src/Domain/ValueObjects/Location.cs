@@ -1,8 +1,8 @@
 namespace AgendaManager.Domain.ValueObjects;
 
-public class Location
+public sealed class Location : IEquatable<Location>
 {
-    public string Value { get; private set; }
+    public string Value { get; }
 
     private Location(string value)
     {
@@ -20,11 +20,17 @@ public class Location
         return new Location(location.Trim());
     }
 
+    public bool Equals(Location? other)
+    {
+        if (other is null)
+            return false;
+
+        return Value == other.Value;
+    }
+
     public override bool Equals(object? obj)
     {
-        if (obj is Location location)
-            return Value == location.Value;
-        return false;
+        return obj is Location other && Equals(other);
     }
 
     public override int GetHashCode()
@@ -35,5 +41,21 @@ public class Location
     public override string ToString()
     {
         return Value;
+    }
+
+    public static bool operator ==(Location? left, Location? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        if (left is null || right is null)
+            return false;
+
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(Location? left, Location? right)
+    {
+        return !(left == right);
     }
 }

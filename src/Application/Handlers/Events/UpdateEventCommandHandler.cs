@@ -48,11 +48,7 @@ public class UpdateEventCommandHandler : BaseHandler, ICommandHandler<UpdateEven
         await _unitOfWork.Events.UpdateAsync(eventEntity);
         await _unitOfWork.SaveChangesAsync();
 
-        var updatedEvent = await _unitOfWork.Events.GetByIdAsync(eventEntity.Id);
-        if (updatedEvent is null)
-            throw new InvalidOperationException("Failed to retrieve updated event");
-
-        return MapToDto(updatedEvent);
+        return MapToDto(eventEntity);
     }
 
     private EventDto MapToDto(Event eventEntity)
